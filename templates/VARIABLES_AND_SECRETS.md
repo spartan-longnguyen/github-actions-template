@@ -7,10 +7,12 @@ This document lists all required GitHub repository variables and secrets for eac
 These are required for all templates:
 
 ### Variables
+
 - `GH_APP_ID` - GitHub App ID for authentication
 - `AWS_REGION` - AWS region for deployments
 
 ### Secrets
+
 - `GH_APP_PRIVATE_KEY` - GitHub App private key for authentication
 - `SLACK_WEBHOOK_URL` - Slack webhook URL for notifications
 
@@ -21,34 +23,41 @@ These are required for all templates:
 ### CloudFront Deployment
 
 #### Variables
+
 - `AWS_S3_BUCKET_DEV` - S3 bucket name for DEV environment
 - `AWS_CLOUDFRONT_ID_DEV` - CloudFront distribution ID for DEV
 - `AWS_S3_BUCKET_PROD` - S3 bucket name for PROD environment
 - `AWS_CLOUDFRONT_ID_PROD` - CloudFront distribution ID for PROD
 - `NODE_VERSION` - Node.js version (e.g., `18.18.2`)
-- `VITE_*` - Frontend environment variables (project-specific, e.g., `VITE_SERVICE_PLATFORM_API_URL_DEV`, `VITE_ENVIRONMENT_DEV`)
+- `VITE_*` - Frontend environment variables (project-specific, e.g., `VITE_SERVICE_PLATFORM_API_URL_DEV`,
+  `VITE_ENVIRONMENT_DEV`)
 
 #### Secrets
+
 - `AWS_ROLE_TO_ASSUME_DEV` - AWS IAM role ARN for DEV environment
 - `AWS_ROLE_TO_ASSUME_PROD` - AWS IAM role ARN for PROD environment
 
 ### Amplify Deployment
 
 #### Variables
+
 - `NODE_VERSION` - Node.js version (e.g., `18.18.2`)
 - `VITE_*` - Frontend environment variables (project-specific)
 
 #### Secrets
+
 - `AMPLIFY_WEBHOOK_URL_DEV` - AWS Amplify webhook URL for DEV
 - `AMPLIFY_WEBHOOK_URL_PROD` - AWS Amplify webhook URL for PROD
 
 ### E2E Tests
 
 #### Variables
+
 - `NODE_VERSION` - Node.js version
 - `PLAYWRIGHT_*` - Playwright configuration variables (project-specific)
 
 #### Secrets
+
 - `E2E_TEST_CREDENTIALS` - Test credentials (project-specific)
 - `SLACK_WEBHOOK_URL` - For test result notifications
 
@@ -59,12 +68,14 @@ These are required for all templates:
 ### Common (All Backend Templates)
 
 #### Variables
+
 - `SERVICE_NAME` - Service name for deployments
 - `BASE_DOMAIN_DEV` - Base domain for DEV environment
 - `BASE_DOMAIN_PROD` - Base domain for PROD environment
 - `AWS_REGION` - AWS region
 
 #### Secrets
+
 - `AWS_ROLE_TO_ASSUME_DEV` - AWS IAM role ARN for DEV environment
 - `AWS_ROLE_TO_ASSUME_PROD` - AWS IAM role ARN for PROD environment
 - `AWS_ACCOUNT_ID_DEV` - AWS account ID for DEV
@@ -73,6 +84,7 @@ These are required for all templates:
 ### Kotlin/Java Specific
 
 #### Variables
+
 - `JAVA_VERSION` - Java version (e.g., `17`)
 - `ARTIFACTORY_URL` - Maven artifact repository URL
 - `ARTIFACTORY_USERNAME` - Maven artifact repository username
@@ -82,6 +94,7 @@ These are required for all templates:
 ### EKS/Helm Deployment
 
 #### Variables
+
 - `DOCKER_REPO_DEV` - Docker repository URL for DEV
 - `DOCKER_REPO_PROD` - Docker repository URL for PROD
 - `DOCKER_REGISTRY_DEV` - Docker registry URL for DEV
@@ -98,6 +111,7 @@ These are required for all templates:
 ### ECS Deployment
 
 #### Variables
+
 - `DOCKER_REPO` - Docker repository URL
 - `ECS_CLUSTER_NAME_DEV` - ECS cluster name for DEV
 - `ECS_CLUSTER_NAME_PROD` - ECS cluster name for PROD
@@ -110,6 +124,7 @@ These are required for all templates:
 ### Python Specific
 
 #### Variables
+
 - `PYTHON_VERSION` - Python version (e.g., `3.11`)
 - Project-specific variables based on your Python application
 
@@ -118,11 +133,13 @@ These are required for all templates:
 ## Infrastructure (Terraform) Templates
 
 ### Variables
+
 - `AWS_REGION` - AWS region for Terraform deployments
 - `TF_VERSION` - Terraform version (if specified in workflow)
 - `TF_VAR_*` - Terraform input variables (project-specific)
 
 ### Secrets
+
 - `AWS_ROLE_TO_ASSUME_DEV` - AWS IAM role ARN for DEV environment
 - `AWS_ROLE_TO_ASSUME_PROD` - AWS IAM role ARN for PROD environment
 - `TF_BACKEND_CONFIG_DEV` - Terraform backend configuration for DEV (optional)
@@ -140,7 +157,8 @@ These are required for all templates:
 - [ ] `AWS_ROLE_TO_ASSUME_DEV` (secret)
 - [ ] `AWS_ROLE_TO_ASSUME_PROD` (secret)
 - [ ] `NODE_VERSION` (variable)
-- [ ] For CloudFront: `AWS_S3_BUCKET_DEV`, `AWS_S3_BUCKET_PROD`, `AWS_CLOUDFRONT_ID_DEV`, `AWS_CLOUDFRONT_ID_PROD` (variables)
+- [ ] For CloudFront: `AWS_S3_BUCKET_DEV`, `AWS_S3_BUCKET_PROD`, `AWS_CLOUDFRONT_ID_DEV`, `AWS_CLOUDFRONT_ID_PROD` (
+  variables)
 - [ ] For Amplify: `AMPLIFY_WEBHOOK_URL_DEV`, `AMPLIFY_WEBHOOK_URL_PROD` (secrets)
 - [ ] Project-specific `VITE_*` variables
 
@@ -158,7 +176,8 @@ These are required for all templates:
 - [ ] `ARTIFACTORY_URL`, `ARTIFACTORY_USERNAME` (variables)
 - [ ] `AWS_CODE_ARTIFACT_DOMAIN_DEV` (variable)
 - [ ] For EKS: `DOCKER_REPO_DEV`, `DOCKER_REPO_PROD`, `HELM_REPO`, `HELM_SPARTAN_VERSION` (variables)
-- [ ] For ECS: `DOCKER_REPO`, `ECS_CLUSTER_NAME_DEV`, `ECS_CLUSTER_NAME_PROD`, `SERVICE_NAME_DEV`, `SERVICE_NAME_PROD`, `TASK_FAMILY_DEV`, `TASK_FAMILY_PROD`, `CONTAINER_NAME` (variables)
+- [ ] For ECS: `DOCKER_REPO`, `ECS_CLUSTER_NAME_DEV`, `ECS_CLUSTER_NAME_PROD`, `SERVICE_NAME_DEV`, `SERVICE_NAME_PROD`,
+  `TASK_FAMILY_DEV`, `TASK_FAMILY_PROD`, `CONTAINER_NAME` (variables)
 
 ### For Backend Projects (Python)
 
@@ -172,7 +191,8 @@ These are required for all templates:
 - [ ] `SERVICE_NAME` (variable)
 - [ ] `PYTHON_VERSION` (variable, if specified)
 - [ ] For EKS: `DOCKER_REPO_DEV`, `DOCKER_REPO_PROD`, `HELM_REPO`, `HELM_SPARTAN_VERSION` (variables)
-- [ ] For ECS: `DOCKER_REPO`, `ECS_CLUSTER_NAME_DEV`, `ECS_CLUSTER_NAME_PROD`, `SERVICE_NAME_DEV`, `SERVICE_NAME_PROD`, `TASK_FAMILY_DEV`, `TASK_FAMILY_PROD`, `CONTAINER_NAME` (variables)
+- [ ] For ECS: `DOCKER_REPO`, `ECS_CLUSTER_NAME_DEV`, `ECS_CLUSTER_NAME_PROD`, `SERVICE_NAME_DEV`, `SERVICE_NAME_PROD`,
+  `TASK_FAMILY_DEV`, `TASK_FAMILY_PROD`, `CONTAINER_NAME` (variables)
 
 ### For Infrastructure (Terraform) Projects
 
@@ -190,7 +210,8 @@ These are required for all templates:
 
 ## Notes
 
-- **Variables** are stored in GitHub repository settings under Settings → Secrets and variables → Actions → Variables tab
+- **Variables** are stored in GitHub repository settings under Settings → Secrets and variables → Actions → Variables
+  tab
 - **Secrets** are stored in GitHub repository settings under Settings → Secrets and variables → Actions → Secrets tab
 - Variables can be referenced in workflows as `${{ vars.VARIABLE_NAME }}`
 - Secrets can be referenced in workflows as `${{ secrets.SECRET_NAME }}`

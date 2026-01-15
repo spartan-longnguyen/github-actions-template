@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="13719402-476c-40d7-a04c-0198f096b570" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/templates/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/kotlin/normal/ecs/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/kotlin/normal/eks/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/kotlin/trunk/ecs/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/kotlin/trunk/eks/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/python/normal/ecs/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/python/normal/eks/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/python/trunk/ecs/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/backend/python/trunk/eks/matrix/deploy-prod.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/frontend/cloudfront/normal/deploy-dev-cloudfront.yml" beforeDir="false" afterPath="$PROJECT_DIR$/templates/frontend/cloudfront/normal/deploy-dev-cloudfront.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/frontend/cloudfront/normal/deploy-prod-cloudfront.yml" beforeDir="false" afterPath="$PROJECT_DIR$/templates/frontend/cloudfront/normal/deploy-prod-cloudfront.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/frontend/cloudfront/trunk/deploy-dev-cloudfront.yml" beforeDir="false" afterPath="$PROJECT_DIR$/templates/frontend/cloudfront/trunk/deploy-dev-cloudfront.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/frontend/cloudfront/trunk/deploy-prod-cloudfront.yml" beforeDir="false" afterPath="$PROJECT_DIR$/templates/frontend/cloudfront/trunk/deploy-prod-cloudfront.yml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="SOFT" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;spartan-longnguyen&quot;
+  }
+}</component>
+  <component name="GitToolBoxStore">
+    <option name="recentBranches">
+      <RecentBranches>
+        <option name="branchesForRepo">
+          <list>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="master" />
+                    <option name="lastUsedInstant" value="1768464649" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1768464648" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$" />
+            </RecentBranchesForRepo>
+          </list>
+        </option>
+      </RecentBranches>
+    </option>
+  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:spartan-longnguyen/github-actions-template.git&quot;,
+    &quot;accountId&quot;: &quot;1761d57c-d675-4689-9adf-c2f47d0162c8&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="38Fktv2sVeXnNIMg7hOHyBhSXk9" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;ai.playground.ignore.import.keys.banner.in.settings&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/longnguyen/Documents/Spartan/GHA&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.fileTypes&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-PY-253.29346.142" />
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="13719402-476c-40d7-a04c-0198f096b570" name="Changes" comment="" />
+      <created>1768402925058</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1768402925058</updated>
+      <workItem from="1768402926201" duration="12758000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="Branch">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="origin/master" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="origin/master" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>

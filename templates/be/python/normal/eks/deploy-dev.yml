@@ -1,0 +1,115 @@
+name: Deploy DEV (Normal - Main/Master)
+
+on:
+  push:
+    branches: ['main', 'master']
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ### General
+  ENVIRONMENT: dev
+  GITHUB_SHA: ${{ github.sha }}
+
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_DEV }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+
+  ### Docker registry
+  # TODO: Update these values based on your project
+  DOCKER_REPO: ${{ vars.DOCKER_REPO_DEV }}
+  DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY_DEV }}
+
+  ### Helm values
+  # TODO: Update these values based on your project
+  HELM_REPO: ${{ vars.HELM_REPO }}
+  HELM_SPARTAN_VERSION: ${{ vars.HELM_SPARTAN_VERSION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  ### Python version
+  # TODO: Update Python version based on your project
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to DEV
+
+    steps:
+      - name: Generate GitHub App Token
+        id: github-app-token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ vars.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: "Checkout source"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          token: ${{ steps.github-app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gh-actions
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: "Login to Amazon ECR"
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: "Extract app version from manifest.json or pyproject.toml"
+        run: |
+          # TODO: Update based on how you store version (manifest.json, pyproject.toml, __version__.py, etc.)
+          # Example for manifest.json:
+          # APP_VERSION=$(cat manifest.json | grep version | head -1 | awk -F: '{ print $2 }' | sed 's/[ ",]//g')
+          # Example for pyproject.toml:
+          # APP_VERSION=$(grep "^version" pyproject.toml | cut -d'"' -f2)
+          APP_VERSION="dev-${GITHUB_SHA::8}"
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+
+      - name: "Prepare docker image tags"
+        id: prepare_image
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::8}
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+      # TODO: Update Docker image build steps based on your project structure
+      - name: "Build and Push the main Docker image"
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          build-args: |
+            APP_VERSION=${{ env.APP_VERSION }}
+          tags: ${{ env.DOCKER_REPO }}:${{ env.IMAGE_TAG }}
+          push: true
+
+      # TODO: Add additional Docker images if needed (e.g., migration, worker)
+      # - name: "Build and Push the migration Docker image"
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: .
+      #     file: Dockerfile.migration
+      #     tags: ${{ env.DOCKER_REPO }}-migration:${{ env.IMAGE_TAG }}
+      #     push: true
+          
+      - name: "Helm Install"
+        run: |
+          helm repo add spartan https://${{ env.GITHUB_TOKEN }}@${{ env.HELM_REPO }}
+          helm upgrade --install --wait --timeout 600s ${{ env.SERVICE_NAME }}-deployment spartan/spartan --create-namespace -n $NAMESPACE -f k8s/${{ env.ENVIRONMENT }}/${{ env.SERVICE_NAME }}/values.yaml --version ${{ env.HELM_SPARTAN_VERSION }}
+        env:
+          NAMESPACE: ${{ env.SERVICE_NAME }}-${{ env.ENVIRONMENT }}

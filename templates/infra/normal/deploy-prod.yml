@@ -1,0 +1,137 @@
+name: Terraform Deploy PROD (Normal - Main/Master)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+    paths:
+      - '**/*.tf'
+      - '**/*.tfvars'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # TODO: Update AWS region and environment
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
+  TF_VERSION: 1.6.0
+  ENVIRONMENT: prod
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply (PROD)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate GitHub App Token
+        id: github-app-token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ vars.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          token: ${{ steps.github-app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gh-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init
+        # TODO: Update working directory and backend configuration
+        # working-directory: ./terraform
+        # env:
+        #   TF_BACKEND_CONFIG: ${{ secrets.TF_BACKEND_CONFIG_PROD }}
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan -no-color
+        # TODO: Update working directory and add any required variables
+        # working-directory: ./terraform
+        # env:
+        #   TF_VAR_environment: ${{ env.ENVIRONMENT }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        # TODO: Update working directory
+        # working-directory: ./terraform
+
+      - name: 'Extract Git info'
+        run: |
+          echo "GITHUB_AUTHOR=$(git log -1 --pretty=format:'%an <%ae>' | xargs)" >> $GITHUB_ENV
+          echo "GITHUB_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "GITHUB_REPO=$(git config --get remote.origin.url)" >> $GITHUB_ENV
+
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          GITHUB_COMMITS=$(git --no-pager log --pretty=format:'%h - %an - %s' -n3 --no-color |  while read line || [ -n "$line" ]; do echo -n "- $line \\n"; done)
+          echo "GITHUB_COMMITS<<$EOF" >> "$GITHUB_ENV"
+          echo $GITHUB_COMMITS | sed "s/\"/'/g" >> "$GITHUB_ENV"
+          echo "$EOF" >> "$GITHUB_ENV"
+
+      - name: Slack Notification
+        if: always()
+        id: slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rocket: *${{ github.event.repository.name }} - Terraform Deployed to PROD*"
+                  }
+                },{
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Created by:* ${{ env.GITHUB_AUTHOR }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "```${{ env.GITHUB_COMMITS }}```"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View changes"
+                      },
+                      "style": "primary",
+                      "url": "${{ env.GITHUB_REPO }}/commit/${{ env.GITHUB_REVISION}}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

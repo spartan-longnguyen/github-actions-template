@@ -1,0 +1,140 @@
+name: Deploy PROD (Normal - Main/Master)
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ### General
+  ENVIRONMENT: prod
+  GITHUB_SHA: ${{ github.sha }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  GH_APP_ID: ${{ vars.GH_APP_ID }}
+  GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_PROD }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
+  AWS_ROLE_TO_ASSUME_DEV: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+
+  ### Docker registry
+  # TODO: Update these values based on your project
+  DOCKER_REPO: ${{ vars.DOCKER_REPO_PROD }}
+  DOCKER_REPO_DEV: ${{ vars.DOCKER_REPO_DEV }}
+  DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY_PROD }}
+  DOCKER_REGISTRY_DEV: ${{ vars.DOCKER_REGISTRY_DEV }}
+
+  ### Helm values
+  # TODO: Update these values based on your project
+  BASE_DOMAIN: ${{ vars.BASE_DOMAIN_PROD }}
+  LOG_FILE: ${{ vars.LOG_FILE }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+
+  DD_AGENT_IMAGE: ${{ vars.DD_AGENT_IMAGE }}
+  DD_LOG_FILE_MOUNT_PATH: ${{ vars.DD_LOG_FILE_MOUNT_PATH }}
+
+jobs:
+  promote-images:
+    outputs:
+      IMAGE_TAG: ${{ steps.prepare_image.outputs.app_version }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate GitHub App Token
+        id: github-app-token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ vars.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: "Checkout source"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          token: ${{ steps.github-app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: "Configure AWS Credentials DEV"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME_DEV }}
+          role-session-name: gh-actions
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: "Login to Amazon ECR"
+        id: login-ecr-dev
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: "Extract app version from manifest.json or pyproject.toml"
+        id: prepare_image
+        run: |
+          # TODO: Update based on how you store version (manifest.json, pyproject.toml, __version__.py, etc.)
+          # Example for manifest.json:
+          # APP_VERSION=$(cat manifest.json | grep version | head -1 | awk -F: '{ print $2 }' | sed 's/[ ",]//g')
+          # Example for pyproject.toml:
+          # APP_VERSION=$(grep "^version" pyproject.toml | cut -d'"' -f2)
+          # Example: Extract from git tag
+          APP_VERSION=${GITHUB_REF#refs/tags/v}
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+          echo "app_version=${APP_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: "Prepare Docker DEV image tags"
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::8}
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      # TODO: Update Docker image pull steps based on your project structure
+      - name: Pull image from Dev ECR
+        run: |
+          docker pull ${{ env.DOCKER_REPO_DEV }}:$IMAGE_TAG
+          # Add additional images if needed:
+          # docker pull ${{ env.DOCKER_REPO_DEV }}-migration:$IMAGE_TAG
+
+      - name: Logout from Dev ECR
+        run: |
+          docker logout
+
+      - name: "Configure AWS Credentials PROD"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gh-actions
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: "Login to Amazon ECR"
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Retag image for Prod
+        run: |
+          docker tag \
+          ${{ env.DOCKER_REPO_DEV }}:$IMAGE_TAG \
+          ${{ env.DOCKER_REPO }}:$APP_VERSION
+          
+          # Optional: also tag as "latest"
+          docker tag \
+          ${{ env.DOCKER_REPO_DEV }}:$IMAGE_TAG \
+          ${{ env.DOCKER_REPO }}:latest
+          
+          # Add additional images if needed:
+          # docker tag \
+          # ${{ env.DOCKER_REPO_DEV }}-migration:$IMAGE_TAG \
+          # ${{ env.DOCKER_REPO }}-migration:$APP_VERSION
+
+      - name: Push image to Prod ECR
+        run: |
+          docker push ${{ env.DOCKER_REPO }}:$APP_VERSION
+          docker push ${{ env.DOCKER_REPO }}:latest
+          
+          # Add additional images if needed:
+          # docker push ${{ env.DOCKER_REPO }}-migration:$APP_VERSION
+          # docker push ${{ env.DOCKER_REPO }}-migration:latest

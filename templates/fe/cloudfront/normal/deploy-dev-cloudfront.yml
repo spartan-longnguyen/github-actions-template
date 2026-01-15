@@ -1,0 +1,141 @@
+name: Deploy Dev (CloudFront - Normal - Main/Master)
+
+on:
+  push:
+    branches: ['main', 'master']
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+  AWS_S3_BUCKET: ${{ vars.AWS_S3_BUCKET_DEV }}
+  AWS_CLOUDFRONT_ID: ${{ vars.AWS_CLOUDFRONT_ID_DEV }}
+  
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  
+  NODE_VERSION: 18.18.2
+
+  # TODO: Update corresponding NodeJS version and matching .env values
+  # Example .env values:
+  # VITE_SERVICE_PLATFORM_API_URL: ${{ vars.VITE_SERVICE_PLATFORM_API_URL_DEV }}
+  # VITE_ENVIRONMENT: ${{ vars.VITE_ENVIRONMENT_DEV }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to dev S3 bucket
+
+    steps:
+      - name: Generate GitHub App Token
+        id: github-app-token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ vars.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          token: ${{ steps.github-app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: Set Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Run install
+        run: yarn install --frozen-lockfile
+
+      - name: Build bundle
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gh-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync --delete dist/ s3://${{ env.AWS_S3_BUCKET }}
+
+      - name: Invalidate CloudFront
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ env.AWS_CLOUDFRONT_ID }}
+          PATHS: '/*'
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: 'Extract Git info'
+        run: |
+          echo "GITHUB_AUTHOR=$(git log -1 --pretty=format:'%an <%ae>' | xargs)" >> $GITHUB_ENV
+          echo "GITHUB_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "GITHUB_REPO=$(git config --get remote.origin.url)" >> $GITHUB_ENV
+
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          GITHUB_COMMITS=$(git --no-pager log --pretty=format:'%h - %an - %s' -n3 --no-color |  while read line || [ -n "$line" ]; do echo -n "- $line \\n"; done)
+          echo "GITHUB_COMMITS<<$EOF" >> "$GITHUB_ENV"
+          echo $GITHUB_COMMITS | sed "s/\"/'/g" >> "$GITHUB_ENV"
+          echo "$EOF" >> "$GITHUB_ENV"
+
+      - name: Slack Notification
+        id: slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rocket: *${{ github.event.repository.name }} - Deployed to DEV*"
+                  }
+                },{
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Created by:* ${{ env.GITHUB_AUTHOR }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "```${{ env.GITHUB_COMMITS }}```"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View changes"
+                      },
+                      "style": "primary",
+                      "url": "${{ env.GITHUB_REPO }}/commit/${{ env.GITHUB_REVISION}}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

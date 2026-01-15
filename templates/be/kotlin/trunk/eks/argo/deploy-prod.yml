@@ -1,0 +1,223 @@
+name: Deploy PROD (ArgoCD GitOps - Trunk-Based - Release)
+
+on:
+  push:
+    branches: ['release/*']
+    paths:
+      - 'app/**/*'
+      - 'core/**/*'
+      - 'k8s/prod/*'
+      - 'Dockerfile'
+      - 'Dockerfile.migration'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ### General
+  ENVIRONMENT: prod
+  GITHUB_SHA: ${{ github.sha }}
+
+  ### AWS Configuration
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID_PROD }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
+
+  ### ArgoCD Configuration
+  # TODO: Update these values based on your project
+  ARGOCD_NAMESPACE: ${{ vars.ARGOCD_NAMESPACE }}
+  ARGOCD_PROJECT_NAME: ${{ vars.K8S_NAMESPACE }}-prod
+  ARGOCD_REPO_NAME: ${{ vars.ARGOCD_REPO_NAME }}
+  ARGOCD_SERVICE_PROJECT_NAME: ${{ vars.SERVICE_NAME }}-prod
+
+  ### Docker Configuration
+  DOCKER_REPO: ${{ vars.DOCKER_REPO_PROD }}
+  DOCKER_REPO_DEV: ${{ vars.DOCKER_REPO_DEV }}
+  BASE_DOMAIN: ${{ vars.BASE_DOMAIN_PROD }}
+  CLUSTER_NAME: ${{ vars.AWS_EKS_CLUSTER_NAME_PROD }}
+
+  ### Helm Configuration
+  HELM_REPO: ${{ vars.HELM_REPO_SPARTAN }}
+  HELM_CHART: 'spartan'
+  HELM_VERSION: ${{ vars.HELM_VERSION_SPARTAN }}
+
+  ### Kubernetes Configuration
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+  K8S_CONTAINER_PORT: '8080'
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+
+  ### Notification
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  SWAGGER_URL: https://${{ vars.SERVICE_NAME }}.${{ vars.BASE_DOMAIN_PROD }}/swagger/views/swagger-ui/index.html
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to PROD (ArgoCD GitOps)
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Create GitHub App Token
+        uses: actions/create-github-app-token@v2
+        id: github-app-token
+        with:
+          app-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          token: ${{ steps.github-app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gh-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Execute Gradle build
+        run: ./gradlew build -x test
+
+      - name: Extract app version from manifest.json
+        run: |
+          APP_VERSION=$(cat manifest.json \
+            | grep version \
+            | head -1 \
+            | awk -F: '{ print $2 }' \
+            | sed 's/[ ",]//g'
+          )
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+
+      - name: Prepare docker image tags
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
+          CURRENT_DATE=$(date +%Y%m%d)
+          IMAGE_TAG="${{ env.ENVIRONMENT }}-$CURRENT_DATE-$SHORT_SHA-$SERVICE_NAME"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Build the Docker images
+        run: |
+          docker build -t "$DOCKER_REPO":"$IMAGE_TAG" --build-arg APP_VERSION=$APP_VERSION .
+          docker build -t "$DOCKER_REPO":"$IMAGE_TAG-migration" -f Dockerfile.migration .
+
+      - name: Push the Docker images
+        run: |
+          docker push "$DOCKER_REPO":"$IMAGE_TAG"
+          docker push "$DOCKER_REPO":"$IMAGE_TAG-migration"
+
+      # TODO: Promote image from DEV to PROD by retagging
+      # Option 1: If using same ECR repo, retag the DEV image
+      # - name: Retag DEV image for PROD
+      #   run: |
+      #     # Get the latest DEV image tag
+      #     DEV_IMAGE_TAG=$(aws ecr describe-images --repository-name ${{ env.DOCKER_REPO_DEV }} --region ${{ env.AWS_REGION }} \
+      #       --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text | grep dev || echo "")
+      #     
+      #     if [ -n "$DEV_IMAGE_TAG" ]; then
+      #       # Retag the DEV image with PROD tag
+      #       MANIFEST=$(aws ecr batch-get-image --repository-name ${{ env.DOCKER_REPO_DEV }} \
+      #         --image-ids imageTag=$DEV_IMAGE_TAG --region ${{ env.AWS_REGION }} \
+      #         --query 'images[0].imageManifest' --output text)
+      #       
+      #       aws ecr put-image --repository-name ${{ env.DOCKER_REPO }} \
+      #         --image-tag ${{ env.PROD_TAG }} --image-manifest "$MANIFEST" --region ${{ env.AWS_REGION }}
+      #     fi
+
+      - name: "Update values for k8s files"
+        uses: cschleiden/replace-tokens@v1
+        with:
+          tokenPrefix: "__"
+          tokenSuffix: "__"
+          files: '["k8s/${{ env.ENVIRONMENT }}/**/*.yaml"]'
+        env:
+          CONFIG_MAP_NAME: ${{ env.SERVICE_NAME }}-config-map
+          CONFIG_SECRET_NAME: ${{ env.SERVICE_NAME }}-env-var
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Checkout infra-argocd
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.ARGOCD_REPO_NAME }}
+          ref: ${{ env.ENVIRONMENT }}
+          token: ${{ steps.github-app-token.outputs.token }}
+          path: ${{ env.ARGOCD_REPO_NAME }}
+
+      - name: Copy and commit values file
+        run: |
+          TARGET_PATH="${{ env.SERVICE_NAME }}"
+          cp k8s/${{ env.ENVIRONMENT }}/values.yaml ${{ env.ARGOCD_REPO_NAME }}/$TARGET_PATH/values.yaml
+          cd ${{ env.ARGOCD_REPO_NAME }}
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add $TARGET_PATH/values.yaml
+          git commit -m "Update values for ${{ env.SERVICE_NAME }} service in ${{ env.ENVIRONMENT }}"
+          git push
+
+      - name: Send Notification
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "${{ job.status == 'success' && ':rocket:' || ':x:' }} *${{ github.event.repository.name }} - Deployed API to PROD (ArgoCD GitOps)* — *${{ job.status == 'success' && 'SUCCESS' || 'FAILURE' }}*"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Environment:* ${{ env.ENVIRONMENT }}\n*Swagger URL:* ${{ env.SWAGGER_URL }}"
+                      }
+                    },
+                    {
+                      "type": "actions",
+                      "elements": [
+                        {
+                          "type": "button",
+                          "text": { "type": "plain_text", "text": "View Run" },
+                          "style": "primary",
+                          "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

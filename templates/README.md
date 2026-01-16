@@ -455,6 +455,20 @@ All workflows use GitHub App tokens (not personal tokens) and OIDC for AWS authe
 
 Workflows cache dependencies to speed up builds. PRs get isolated caches, while main branch refreshes the primary cache.
 
+**GitHub-hosted runners**: Caching is automatically handled by GitHub Actions. Dependencies are cached between runs.
+
+**Self-hosted runners**: Caching works the same way, but cache storage is on your runner's disk. Make sure your runner
+has sufficient disk space for caches.
+
+### Runners
+
+Workflows support both GitHub-hosted and self-hosted runners:
+
+- **GitHub-hosted** (`ubuntu-latest`): Default for most workflows. No setup required, but limited resources.
+- **Self-hosted** (e.g., `builder-16-32`): Used for resource-intensive builds. Requires setting up your own runner.
+
+To use self-hosted runners, update the `runs-on` value in your workflow file. See the Kotlin templates for examples.
+
 ---
 
 **Need help?** Check the workflow files for `TODO:` comments - these indicate what needs to be customized for your

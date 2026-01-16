@@ -208,6 +208,55 @@ These are required for all templates:
 
 ---
 
+---
+
+## Runners and Caching
+
+### GitHub-Hosted Runners
+
+Most workflows use `ubuntu-latest` (GitHub-hosted runners). These are:
+
+- **Pros**: No setup required, automatically updated, isolated per job
+- **Cons**: Limited resources, slower for large builds
+- **Caching**: Automatically handled by GitHub Actions. Caches are stored in GitHub's infrastructure.
+
+### Self-Hosted Runners
+
+Some workflows (like Kotlin PR checks and master builds) use self-hosted runners (e.g., `builder-16-32`). These are:
+
+- **Pros**: More resources, faster builds, custom configurations
+- **Cons**: Requires setup and maintenance, security considerations
+- **Caching**: Works the same way, but cache storage is on your runner's disk. Ensure sufficient disk space.
+
+### Caching Strategy
+
+Workflows use different caching strategies:
+
+- **Node.js/Yarn**: `cache: "yarn"` in `setup-node` action
+- **Python/pip**: `cache: 'pip'` in `setup-python` action
+- **Gradle**: `cache: gradle` in `setup-java` action + `gradle/actions/setup-gradle` with build cache
+- **Docker**: `actions/cache@v4` for Docker layer caching
+
+**Cache behavior**:
+
+- Main/master branch: Writes to cache (refreshes primary cache)
+- PR branches: Reads from cache, writes isolated cache
+- Release branches: Typically read-only cache (doesn't pollute main cache)
+
+### Switching Runners
+
+To use self-hosted runners, update the `runs-on` value in your workflow file:
+
+```yaml
+jobs:
+  build:
+    runs-on: builder-16-32  # Change from ubuntu-latest to your runner label
+```
+
+**Note**: Make sure your self-hosted runner is properly configured and has the required tools installed.
+
+---
+
 ## Notes
 
 - **Variables** are stored in GitHub repository settings under Settings → Secrets and variables → Actions → Variables

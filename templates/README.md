@@ -422,15 +422,10 @@ These actions are still available for workflows that need more granular control 
 - `setup-aws-credentials` - Configure AWS credentials using OIDC
 - `setup-java-kotlin` - Setup JDK, Gradle, and artifact registry
 - `setup-python` - Setup Python version and install dependencies
-- `setup-nodejs` - Setup Node.js and install dependencies
 
 #### Build Steps
 
 - `build-java-kotlin` - Run Gradle build commands
-- `build-python` - Run Python build commands
-- `build-frontend` - Build frontend application
-- `run-linters` - Run linting tools
-- `run-tests` - Run test suite
 
 #### Docker Operations
 
@@ -445,10 +440,6 @@ These actions are still available for workflows that need more granular control 
       `github_token`
     - **Used in:** ArgoCD deployment workflows
 
-#### Deployment Steps
-
-- `deploy-ecs` - Deploy application to AWS ECS
-- `deploy-eks-helm` - Deploy application to EKS using Helm
 
 #### Utilities
 
@@ -544,17 +535,10 @@ steps:
     ├── setup-aws-credentials/    # Individual: AWS credentials
     ├── setup-java-kotlin/         # Individual: Java/Kotlin setup
     ├── setup-python/              # Individual: Python setup
-    ├── setup-nodejs/              # Individual: Node.js setup
     ├── build-java-kotlin/         # Individual: Java/Kotlin build
-    ├── build-python/              # Individual: Python build
-    ├── build-frontend/            # Individual: Frontend build
-    ├── run-linters/               # Individual: Linting
-    ├── run-tests/                 # Individual: Testing
     ├── docker-ecr-login/         # Individual: Docker ECR login
     ├── docker-prepare-tags/      # Individual: Docker tag preparation
     ├── docker-build-push/        # Individual: Docker build & push
-    ├── deploy-ecs/               # Individual: ECS deployment
-    ├── deploy-eks-helm/          # Individual: EKS Helm deployment
     ├── commit-argocd-values/     # Individual: ArgoCD GitOps commit
     ├── extract-git-info/         # Individual: Git info extraction
     ├── extract-app-version/      # Individual: App version extraction

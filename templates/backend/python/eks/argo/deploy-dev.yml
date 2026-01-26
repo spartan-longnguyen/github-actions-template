@@ -1,4 +1,10 @@
-name: Deploy DEV (ArgoCD GitOps - Normal - Main/Master) - Python
+name: Deploy DEV (ArgoCD GitOps - Normal - Main/Master)
+
+# === Workflow Description ===
+# This workflow deploys a Python backend application to AWS EKS using ArgoCD GitOps (DEV environment).
+# It builds Docker images, pushes them to ECR, and updates the ArgoCD GitOps repository.
+# ArgoCD automatically syncs changes to the cluster.
+# Triggers: Push to main/master branch (specific paths) or manual workflow dispatch.
 
 on:
   push:
@@ -73,7 +79,7 @@ jobs:
 
     steps:
       - uses: ./.github/actions/setup-github-auth
-        id: github-auth
+        id: setup-github-auth
         with:
           app_id: ${{ vars.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
@@ -96,6 +102,13 @@ jobs:
           cache: 'pip'
           install_dependencies: 'true'
 
+      # TODO: Extract app version if needed (for build args or versioning)
+      # - uses: ./.github/actions/extract-app-version
+      #   id: extract-version
+      #   with:
+      #     version_source: 'pyproject'  # or 'manifest', 'git-tag'
+      #     version_file: 'pyproject.toml'
+
       - uses: ./.github/actions/docker-prepare-tags
         id: prepare-tags
         with:
@@ -113,6 +126,9 @@ jobs:
           dockerfile: Dockerfile
           image_repo: ${{ env.DOCKER_REPO }}
           image_tag: ${{ env.IMAGE_TAG }}
+          # TODO: Add build args if needed
+          # build_args: |
+          #   APP_VERSION=${{ steps.extract-version.outputs.app_version }}
           push: 'true'
 
       # TODO: Add migration image if needed
@@ -140,7 +156,7 @@ jobs:
           argocd_repo_name: ${{ env.ARGOCD_REPO_NAME }}
           service_name: ${{ env.SERVICE_NAME }}
           environment: ${{ env.ENVIRONMENT }}
-          github_token: ${{ steps.github-auth.outputs.token }}
+          github_token: ${{ steps.setup-github-auth.outputs.token }}
 
       - uses: ./.github/actions/extract-git-info
         id: git-info

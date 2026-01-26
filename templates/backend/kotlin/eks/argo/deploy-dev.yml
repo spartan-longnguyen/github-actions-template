@@ -1,5 +1,11 @@
 name: Deploy DEV (ArgoCD GitOps - Normal - Main/Master)
 
+# === Workflow Description ===
+# This workflow deploys a Kotlin/Java backend application to AWS EKS using ArgoCD GitOps (DEV environment).
+# It builds Docker images (main + migration), pushes them to ECR, and updates the ArgoCD GitOps repository.
+# ArgoCD automatically syncs changes to the cluster.
+# Triggers: Push to main/master branch (specific paths) or manual workflow dispatch.
+
 on:
   push:
     branches: [ 'main', 'master' ]

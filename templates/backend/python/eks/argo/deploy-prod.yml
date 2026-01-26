@@ -1,4 +1,10 @@
-name: Deploy PROD (ArgoCD GitOps - Normal - Main/Master) - Python
+name: Deploy PROD (ArgoCD GitOps - Normal - Main/Master)
+
+# === Workflow Description ===
+# This workflow deploys a Python backend application to AWS EKS using ArgoCD GitOps (PROD environment).
+# It promotes the DEV Docker image to PROD by retagging and updates the ArgoCD GitOps repository.
+# ArgoCD automatically syncs changes to the cluster.
+# Triggers: Git tag push (v*.*.*) or manual workflow dispatch.
 
 on:
   push:
@@ -73,7 +79,7 @@ jobs:
           echo "Using tag: $TAG"
 
       - uses: ./.github/actions/setup-github-auth
-        id: github-auth
+        id: setup-github-auth
         with:
           app_id: ${{ vars.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
@@ -96,9 +102,10 @@ jobs:
           github_sha: ${{ steps.tag.outputs.tag }}
           environment: 'prod'
 
-      - name: Set IMAGE_TAG
+      - name: Set PROD_TAG
         shell: bash
         run: |
+          echo "PROD_TAG=${{ steps.prepare-tags.outputs.image_tag }}" >> $GITHUB_ENV
           echo "IMAGE_TAG=${{ steps.prepare-tags.outputs.image_tag }}" >> $GITHUB_ENV
 
       # TODO: Promote image from DEV to PROD by retagging
@@ -128,7 +135,7 @@ jobs:
         env:
           CONFIG_MAP_NAME: ${{ env.SERVICE_NAME }}-config-map
           CONFIG_SECRET_NAME: ${{ env.SERVICE_NAME }}-env-var
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_TAG: ${{ env.PROD_TAG }}
 
       - uses: ./.github/actions/commit-argocd-values
         with:
@@ -136,7 +143,7 @@ jobs:
           service_name: ${{ env.SERVICE_NAME }}
           environment: ${{ env.ENVIRONMENT }}
           commit_message: "Update values for ${{ env.SERVICE_NAME }} service in ${{ env.ENVIRONMENT }} - ${{ steps.tag.outputs.tag }}"
-          github_token: ${{ steps.github-auth.outputs.token }}
+          github_token: ${{ steps.setup-github-auth.outputs.token }}
 
       - uses: ./.github/actions/extract-git-info
         id: git-info
@@ -152,5 +159,5 @@ jobs:
           github_commits: ${{ env.GITHUB_COMMITS }}
           github_revision: ${{ env.GITHUB_REVISION }}
           github_repo: ${{ env.GITHUB_REPO }}
-          deployment_type: ArgoCD
+          deployment_type: ArgoCD GitOps
           view_run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

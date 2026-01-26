@@ -1,5 +1,11 @@
 name: Deploy PROD (ArgoCD GitOps - Normal - Main/Master)
 
+# === Workflow Description ===
+# This workflow deploys a Kotlin/Java backend application to AWS EKS using ArgoCD GitOps (PROD environment).
+# It promotes the DEV Docker image to PROD by retagging and updates the ArgoCD GitOps repository.
+# ArgoCD automatically syncs changes to the cluster.
+# Triggers: Git tag push (v*.*.*) or manual workflow dispatch.
+
 on:
   push:
     tags: [ "v*.*.*" ]

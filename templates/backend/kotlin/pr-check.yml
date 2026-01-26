@@ -37,8 +37,7 @@ env:
 
 jobs:
   pr:
-    # Using self-hosted runner for resource-intensive builds
-    # TODO: Change to ubuntu-latest if you don't have self-hosted runners
+    # TODO: Use self-hosted runner for resource-intensive builds (e.g., runs-on: builder-16-32)
     runs-on: builder-16-32
 
     steps:

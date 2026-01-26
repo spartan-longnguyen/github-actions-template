@@ -74,9 +74,10 @@ jobs:
           aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
 
       # === Step 2: Build and Package ===
-      - name: Execute Custom Build Command
-        shell: bash
-        run: ./gradlew --build-cache :app:module-postgresql:panda --scan
+      # TODO: Add custom build commands if needed (e.g., Gradle tasks)
+      # - name: Execute Custom Build Command
+      #   shell: bash
+      #   run: ./gradlew --build-cache :app:module-postgresql:panda --scan
 
       - uses: ./.github/actions/build-and-package
         id: package
@@ -99,6 +100,6 @@ jobs:
           helm_repo: ${{ env.HELM_REPO }}
           helm_chart: 'spartan'
           helm_version: ${{ env.HELM_SPARTAN_VERSION }}
-          values_file: 'k8s/${{ env.ENVIRONMENT }}/service-rental/values.yaml'
+          values_file: 'k8s/${{ env.ENVIRONMENT }}/${{ env.SERVICE_NAME }}/values.yaml'
           github_token: ${{ env.GITHUB_TOKEN }}
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

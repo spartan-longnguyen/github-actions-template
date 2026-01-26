@@ -62,6 +62,8 @@ jobs:
           python_version: ${{ env.PYTHON_VERSION }}
 
       # === Step 2: Build and Package ===
+      # TODO: Add custom build commands if needed (e.g., compile, package, etc.)
+
       - uses: ./.github/actions/build-and-package
         id: package
         with:

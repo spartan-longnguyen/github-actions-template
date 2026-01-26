@@ -27,6 +27,7 @@ env:
 
 jobs:
   build:
+    # TODO: Use self-hosted runner for resource-intensive builds (e.g., runs-on: builder-16-32)
     runs-on: ubuntu-latest
 
     steps:

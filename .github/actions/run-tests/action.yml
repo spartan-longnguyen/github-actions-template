@@ -1,0 +1,20 @@
+name: 'Run Tests'
+description: 'Run test suite'
+inputs:
+  test_command:
+    description: 'Test command to run'
+    required: false
+    default: 'echo "Add your test commands here"'
+  test_env:
+    description: 'Additional environment variables (JSON format)'
+    required: false
+    default: '{}'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run tests
+      shell: bash
+      run: ${{ inputs.test_command }}
+      env:
+      # Common test environment variables can be added here
+      # Additional env vars from inputs.test_env would need parsing

@@ -1,0 +1,32 @@
+name: 'Setup Node.js'
+description: 'Setup Node.js version and install dependencies'
+inputs:
+  node_version:
+    description: 'Node.js version to use'
+    required: true
+  cache:
+    description: 'Package manager for cache (yarn, npm)'
+    required: false
+    default: 'yarn'
+  install_dependencies:
+    description: 'Whether to install dependencies'
+    required: false
+    default: 'true'
+runs:
+  using: 'composite'
+  steps:
+    - name: Set Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node_version }}
+        cache: ${{ inputs.cache }}
+
+    - name: Run install
+      if: inputs.install_dependencies == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.cache }}" = "yarn" ]; then
+          yarn install --frozen-lockfile
+        else
+          npm ci
+        fi

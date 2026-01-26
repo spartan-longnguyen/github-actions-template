@@ -28,19 +28,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Generate GitHub App Token
-        id: github-app-token
-        uses: tibdex/github-app-token@v1
+      - uses: ./.github/actions/setup-github-auth
         with:
           app_id: ${{ vars.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-
-      - name: Checkout source
-        uses: actions/checkout@v4
-        with:
-          token: ${{ steps.github-app-token.outputs.token }}
           ref: ${{ github.head_ref }}
-          persist-credentials: false
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -66,26 +58,16 @@ jobs:
     needs: terraform-validate
 
     steps:
-      - name: Generate GitHub App Token
-        id: github-app-token
-        uses: tibdex/github-app-token@v1
+      - uses: ./.github/actions/setup-github-auth
         with:
           app_id: ${{ vars.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-
-      - name: Checkout source
-        uses: actions/checkout@v4
-        with:
-          token: ${{ steps.github-app-token.outputs.token }}
           ref: ${{ github.head_ref }}
-          persist-credentials: false
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/setup-aws-credentials
         with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          role-session-name: gh-actions
-          aws-region: ${{ env.AWS_REGION }}
+          role_to_assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws_region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

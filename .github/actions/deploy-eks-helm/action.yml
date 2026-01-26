@@ -1,0 +1,49 @@
+name: 'Deploy to EKS using Helm'
+description: 'Deploy application to EKS using Helm'
+inputs:
+  helm_repo:
+    description: 'Helm repository URL'
+    required: true
+  helm_chart:
+    description: 'Helm chart name'
+    required: true
+  helm_version:
+    description: 'Helm chart version'
+    required: true
+  service_name:
+    description: 'Service name'
+    required: true
+  environment:
+    description: 'Environment name'
+    required: true
+  namespace:
+    description: 'Kubernetes namespace'
+    required: false
+    default: ''
+  values_file:
+    description: 'Path to values file'
+    required: false
+    default: ''
+  github_token:
+    description: 'GitHub token for private Helm repo'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Helm Install
+      shell: bash
+      run: |
+        if [ "${{ inputs.github_token }}" != "" ]; then
+          helm repo add spartan https://${{ inputs.github_token }}@${{ inputs.helm_repo }}
+        else
+          helm repo add spartan ${{ inputs.helm_repo }}
+        fi
+        
+        NAMESPACE="${{ inputs.namespace != '' && inputs.namespace || format('{0}-{1}', inputs.service_name, inputs.environment) }}"
+        
+        if [ "${{ inputs.values_file }}" != "" ]; then
+          helm upgrade --install --wait --timeout 600s ${{ inputs.service_name }}-deployment spartan/${{ inputs.helm_chart }} --create-namespace -n $NAMESPACE -f ${{ inputs.values_file }} --version ${{ inputs.helm_version }}
+        else
+          helm upgrade --install --wait --timeout 600s ${{ inputs.service_name }}-deployment spartan/${{ inputs.helm_chart }} --create-namespace -n $NAMESPACE --version ${{ inputs.helm_version }}
+        fi

@@ -1,0 +1,13 @@
+name: 'Build Python'
+description: 'Run Python build commands'
+inputs:
+  build_command:
+    description: 'Build command to run'
+    required: false
+    default: 'echo "Add your build commands here"'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run build
+      shell: bash
+      run: ${{ inputs.build_command }}

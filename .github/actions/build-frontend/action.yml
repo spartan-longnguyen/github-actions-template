@@ -1,0 +1,22 @@
+name: 'Build Frontend'
+description: 'Build frontend application'
+inputs:
+  build_command:
+    description: 'Build command (yarn build, npm run build, etc.)'
+    required: false
+    default: 'yarn build'
+  package_manager:
+    description: 'Package manager (yarn or npm)'
+    required: false
+    default: 'yarn'
+runs:
+  using: 'composite'
+  steps:
+    - name: Build bundle
+      shell: bash
+      run: |
+        if [ "${{ inputs.package_manager }}" = "yarn" ]; then
+          yarn build
+        else
+          npm run build
+        fi

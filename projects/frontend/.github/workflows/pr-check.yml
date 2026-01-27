@@ -1,0 +1,80 @@
+name: Dev - Check Pull Request
+
+# === Workflow Description ===
+# This workflow runs linting, tests, and builds for frontend pull requests.
+# It ensures code quality and catches build errors before merging.
+# Triggers: Pull request events.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: write # required for cache write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # === Node.js Configuration ===
+  # TODO: Update corresponding NodeJS version and matching .env values
+  NODE_VERSION: 18.18.2
+  # Example .env values:
+  # VITE_SERVICE_PLATFORM_API_URL: ${{ vars.VITE_SERVICE_PLATFORM_API_URL_DEV }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # === Step 1: Setup Environment ===
+      
+      # Generate GitHub App Token
+      - name: Generate GitHub App Token
+        id: github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      # Checkout source code
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '3'
+          token: ${{ steps.github-app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      # Set Node.js
+      - name: Set Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      # Install Node.js dependencies
+      - name: Install Node.js dependencies
+        shell: bash
+        run: yarn install --frozen-lockfile
+
+      # === Step 2: Run Linters ===
+      - name: Run Linters
+        shell: bash
+        run: yarn lint
+
+      # === Step 3: Build ===
+      - name: Build Frontend
+        shell: bash
+        run: yarn build
+        env:
+        # TODO: Add your build environment variables here
+        # VITE_SERVICE_PLATFORM_API_URL: ${{ vars.VITE_SERVICE_PLATFORM_API_URL_DEV }}
+
+      # === Step 4: Run Tests ===
+      - name: Run Tests
+        shell: bash
+        run: yarn test --coverage --watchAll=false

@@ -7,13 +7,51 @@
 
 This repository contains:
 
-- **`templates/`** - Reusable workflow templates (this directory)
-- **`projects/`** - Test projects for validating workflows
-    - `backend-kotlin/` - Kotlin/Gradle test project
-    - `backend-python/` - Python/Flask test project
-    - `frontend/` - React/Vite test project
-    - `infra/` - Terraform test project
-- **`.github/actions/`** - Reusable composite actions (should be at repository root)
+- **`templates/`** - Reusable workflow templates that use composite actions
+    - These are optimized for reusability and maintainability
+    - Use composite actions from `.github/actions/` for modularity
+    - Copy these to your project and customize as needed
+
+- **`projects/`** - Sample test projects with fully expanded workflows
+    - `backend-kotlin/` - Kotlin/Gradle test project with detailed workflows
+    - `backend-python/` - Python/Flask test project with detailed workflows
+    - `frontend/` - React/Vite test project with CloudFront workflows
+    - `infra/` - Terraform test project with deployment workflows
+    - **Note**: These workflows have all steps written out explicitly (no composite action references)
+    - Use these as reference examples to understand workflow structure
+
+- **`.github/actions/`** - Reusable composite actions (at repository root)
+    - Used by templates for modularity
+    - Can be referenced in your own workflows if needed
+
+## 🧪 Sample Projects
+
+The `projects/` directory contains ready-to-use test codebases with **fully expanded workflows**. Each project includes:
+
+- Source code and build configuration
+- Dockerfiles (for backend projects)
+- Pre-configured GitHub Actions workflows with **all steps written out explicitly**
+- No composite action references - easier to understand and modify
+- Ready to test CI/CD pipelines
+
+**Key Difference from Templates:**
+
+- **Templates** (`templates/`): Use composite actions for reusability
+- **Sample Projects** (`projects/`): Have all steps expanded for clarity
+
+To test workflows:
+
+1. Navigate to a project: `cd projects/backend-kotlin`
+2. Initialize Git: `git init && git add . && git commit -m "Initial commit"`
+3. Push to GitHub and configure secrets/variables
+4. Test: Create PR → triggers PR checks, Push to main → triggers DEV deployment
+
+**When to use which:**
+
+- **Use templates** if you want modular, maintainable workflows that reference composite actions
+- **Use sample projects** as reference to understand the detailed steps, then copy and customize for your needs
+
+---
 
 ## 🚀 Quick Start: I'm Starting a New Project
 
@@ -330,8 +368,13 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
 
 ## 🔧 Reusable Workflow Steps (Composite Actions)
 
-All workflows use **composite actions** - reusable, modular steps that make workflows easier to understand and maintain.
+The **templates** use **composite actions** - reusable, modular steps that make workflows easier to understand and
+maintain.
 These actions are located in `.github/actions/` and can be referenced in any workflow.
+
+**Note:** The sample projects in `projects/` have all steps expanded explicitly for easier understanding and
+modification.
+If you prefer detailed, explicit workflows, use the sample projects as a reference.
 
 ### Architecture: 3-Step Structure
 
@@ -461,9 +504,9 @@ These actions are still available for workflows that need more granular control 
     - **Used in:** ArgoCD workflows and version extraction scenarios
 - `send-slack-notification` - Send deployment notification to Slack
 
-### Example: Using Consolidated Actions
+### Example: Using Consolidated Actions (Templates)
 
-**Backend Deployment (3 steps):**
+**Backend Deployment (3 steps) - Used in templates:**
 
 ```yaml
 steps:
@@ -500,7 +543,7 @@ steps:
       slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
-**Frontend Deployment (3 steps):**
+**Frontend Deployment (3 steps) - Used in templates:**
 
 ```yaml
 steps:
@@ -527,6 +570,9 @@ steps:
       cloudfront_id: ${{ vars.AWS_CLOUDFRONT_ID }}
       slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
+
+> **💡 Tip:** If you prefer to see all steps written out explicitly (without composite actions), check the sample
+> projects in `projects/` directory. They contain fully expanded workflows that are easier to understand and modify.
 
 ---
 
@@ -805,5 +851,8 @@ To use self-hosted runners, update the `runs-on` value in your workflow file. Se
 
 ---
 
-**Need help?** Check the workflow files for `TODO:` comments - these indicate what needs to be customized for your
-project.
+**Need help?**
+
+- Check the workflow files for `TODO:` comments - these indicate what needs to be customized for your project
+- Review the sample projects in `projects/` to see fully expanded workflows with all steps written out
+- Use templates from `templates/` if you prefer modular workflows with composite actions

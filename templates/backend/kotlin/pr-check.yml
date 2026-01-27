@@ -1,5 +1,10 @@
 name: PR
 
+# === Workflow Description ===
+# This workflow runs build and tests for Kotlin/Java backend pull requests.
+# It ensures code quality and catches errors before merging.
+# Triggers: Pull request events.
+
 on:
   pull_request:
 
@@ -12,89 +17,39 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ### General
+  # === General Configuration ===
   ENVIRONMENT: dev
   GITHUB_SHA: ${{ github.sha }}
 
+  # === AWS Configuration ===
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_DEV }}
   AWS_REGION: ${{ vars.AWS_REGION }}
   AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
 
-  ### Artifact registry
+  # === Artifact Registry ===
   # TODO: Update these values based on your project
   ARTIFACTORY_URL: ${{ vars.ARTIFACTORY_URL }}
   ARTIFACTORY_USERNAME: ${{ vars.ARTIFACTORY_USERNAME }}
   AWS_CODE_ARTIFACT_DOMAIN: ${{ vars.AWS_CODE_ARTIFACT_DOMAIN_DEV }}
   
+  # === Language Configuration ===
   JAVA_VERSION: 17
 
 jobs:
   pr:
-    # Using self-hosted runner for resource-intensive builds
-    # TODO: Change to ubuntu-latest if you don't have self-hosted runners
+    # TODO: Use self-hosted runner for resource-intensive builds (e.g., runs-on: builder-16-32)
     runs-on: builder-16-32
 
     steps:
-      - name: Generate GitHub App Token
-        id: github-app-token
-        uses: tibdex/github-app-token@v1
-        with:
-          app_id: ${{ vars.GH_APP_ID }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-
-      - name: "Checkout source"
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 3
-          token: ${{ steps.github-app-token.outputs.token }}
-          ref: ${{ github.head_ref }}
-          persist-credentials: false
-
-      - name: "Install AWS CLI"
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-          aws --version
-
-      - name: "Configure AWS Credentials"
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          role-session-name: gh-actions
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: "Write gradle.properties"
-        run: |
-          mkdir -p ~/.gradle
-          cat <<EOF > ~/.gradle/gradle.properties
-          artifactRegistryMavenReleaseUrl=${{ env.ARTIFACTORY_URL }}
-          artifactRegistryMavenUsername=${{ env.ARTIFACTORY_USERNAME }}
-          artifactRegistryMavenPassword=$(aws codeartifact get-authorization-token --domain $AWS_CODE_ARTIFACT_DOMAIN --domain-owner $AWS_ACCOUNT_ID --region $AWS_REGION --query authorizationToken --output text)
-          EOF
-
-      - name: "Set up JDK"
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: gradle
-
-      - name: "Setup Gradle"
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false # allow writing on pull request branch
-                                 # default is false on default branch (e.g main/master), true on others
-
-      - name: "Install flyway"
+      # === Step 1: Setup Flyway (for database migrations) ===
+      - name: Install Flyway
         uses: red-gate/setup-flyway@v1
         with:
           architecture: 'java'
 
-      # This step should be after ktlintCheck to avoid misconfig
-      - name: "Set FLYWAY_DIR from setup action"
+      - name: Set FLYWAY_DIR
+        shell: bash
         run: |
-          # Locate Flyway installed by the action and export absolute binary path
           FLY_BIN=""
           for d in "$HOME"/_work/_tool/flyway/*/java "$HOME"/_work/_tool/flyway/*; do
             if [ -x "$d/flyway" ]; then FLY_BIN="$d/flyway"; break; fi
@@ -104,18 +59,24 @@ jobs:
             exit 127
           fi
           echo "FLYWAY_DIR=$FLY_BIN" >> $GITHUB_ENV
-        env:
-          DB_PORT: 5432
 
-      - name: "Run build"
-        run: ./gradlew --build-cache build -x test
+      # === Step 2: Build and Test ===
+      - uses: ./.github/actions/build-and-test
+        with:
+          app_id: ${{ vars.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          ref: ${{ github.head_ref }}
+          aws_role_to_assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws_region: ${{ env.AWS_REGION }}
+          language: 'java-kotlin'
+          java_version: ${{ env.JAVA_VERSION }}
+          artifactory_url: ${{ env.ARTIFACTORY_URL }}
+          artifactory_username: ${{ env.ARTIFACTORY_USERNAME }}
+          aws_code_artifact_domain: ${{ env.AWS_CODE_ARTIFACT_DOMAIN }}
+          aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+          exclude_tests: 'true'
+          test_command: './gradlew --build-cache test --fail-fast'
         env:
-          FLYWAY_DIR: ${{ env.FLYWAY_DIR }}
-
-      - name: "Run tests"
-        run: ./gradlew --build-cache test --fail-fast
-        env:
-          # TODO: Update these environment variables based on your project requirements
           FLYWAY_DIR: ${{ env.FLYWAY_DIR }}
           DB_HOST: localhost
           DB_PORT: 5432

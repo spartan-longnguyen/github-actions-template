@@ -7,7 +7,7 @@ permissions:
 on:
   # Run on merge to main/master
   push:
-    branches: [main, master]
+    branches: [ main, master ]
 
   # Allow manual triggering on any branch
   workflow_dispatch:
@@ -173,14 +173,14 @@ jobs:
               // Fallback: try to find open PR for this branch
               const branch = context.ref.replace('refs/heads/', '');
               console.log(`No PR found by commit, searching for open PR on branch: ${branch}`);
-              
+            
               const { data: branchPRs } = await github.rest.pulls.list({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 head: `${context.repo.owner}:${branch}`,
                 state: 'open',
               });
-              
+            
               if (branchPRs.length > 0) {
                 const branchPR = branchPRs[0];
                 console.log(`Found open PR #${branchPR.number} for branch ${branch}`);

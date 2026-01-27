@@ -3,6 +3,18 @@
 > **👋 New to setting up CI/CD?** Start here! This guide will help you set up GitHub Actions workflows for your project
 > in minutes.
 
+## 📁 Repository Structure
+
+This repository contains:
+
+- **`templates/`** - Reusable workflow templates (this directory)
+- **`projects/`** - Test projects for validating workflows
+    - `backend-kotlin/` - Kotlin/Gradle test project
+    - `backend-python/` - Python/Flask test project
+    - `frontend/` - React/Vite test project
+    - `infra/` - Terraform test project
+- **`.github/actions/`** - Reusable composite actions (should be at repository root)
+
 ## 🚀 Quick Start: I'm Starting a New Project
 
 **First, answer these questions:**
@@ -13,14 +25,15 @@
     - [ ] Infrastructure (Terraform)
 
 2. **For Frontend/Backend: What's your deployment strategy?**
-    - [ ] **Normal**: Deploy when code is pushed to `main` or `master` branch
-    - [ ] **Trunk-based**: Deploy when code is pushed to `release/*` branches
+    - [ ] **Default**: Deploy when code is pushed to `main` or `master` branch
+
+   > **Note**: If you need a trunk-based release strategy, consider using a release branch (e.g., `release/v1.0.0`)
+   instead. You can modify the workflow trigger to include `release/*` branches in the `on.push.branches` section.
 
 3. **For Backend: What's your deployment target?**
     - [ ] **EKS** (Kubernetes) - Use if you have Kubernetes clusters
     - [ ] **ECS** (AWS Container Service) - Use if you prefer simpler AWS-native deployments
     - [ ] **ArgoCD GitOps** - Use if you have ArgoCD set up for GitOps workflows
-    - [ ] **Multi-Environment** - Use if you need to deploy to multiple prod environments (prod-1, prod-2, prod-3)
 
 4. **For Frontend: What's your deployment method?**
     - [ ] **CloudFront/S3** - Static site hosting on AWS
@@ -42,12 +55,8 @@ Based on your answers above, find your template path below and copy the files.
 # 1. Copy PR check workflow (always needed)
 cp templates/frontend/cloudfront/pr-check.yml <your-project>/.github/workflows/
 
-# 2. Copy deployment workflows (choose one)
-# Normal deployment (deploys on main/master):
-cp templates/frontend/cloudfront/normal/*.yml <your-project>/.github/workflows/
-
-# OR Trunk-based deployment (deploys on release/*):
-cp templates/frontend/cloudfront/trunk/*.yml <your-project>/.github/workflows/
+# 2. Copy deployment workflows
+cp templates/frontend/cloudfront/deploy-*.yml <your-project>/.github/workflows/
 
 # 3. Optional: Copy E2E tests
 cp templates/frontend/e2e-tests.yml <your-project>/.github/workflows/
@@ -59,12 +68,8 @@ cp templates/frontend/e2e-tests.yml <your-project>/.github/workflows/
 # 1. Copy PR check workflow
 cp templates/frontend/amplify/pr-check.yml <your-project>/.github/workflows/
 
-# 2. Copy deployment workflows (choose one)
-# Normal deployment:
-cp templates/frontend/amplify/normal/*.yml <your-project>/.github/workflows/
-
-# OR Trunk-based deployment:
-cp templates/frontend/amplify/trunk/*.yml <your-project>/.github/workflows/
+# 2. Copy deployment workflows
+cp templates/frontend/amplify/deploy-*.yml <your-project>/.github/workflows/
 ```
 
 #### For Backend Projects
@@ -76,26 +81,16 @@ cp templates/frontend/amplify/trunk/*.yml <your-project>/.github/workflows/
 cp templates/backend/kotlin/pr-check.yml <your-project>/.github/workflows/
 cp templates/backend/kotlin/master-build.yml <your-project>/.github/workflows/
 
-# 2. Choose your deployment method and strategy:
+# 2. Choose your deployment method:
 
-# Option A: EKS/Helm (Normal deployment)
-cp templates/backend/kotlin/normal/eks/*.yml <your-project>/.github/workflows/
+# Option A: EKS/Helm
+cp templates/backend/kotlin/eks/deploy-*.yml <your-project>/.github/workflows/
 
-# Option B: EKS/Helm (Trunk-based)
-cp templates/backend/kotlin/trunk/eks/*.yml <your-project>/.github/workflows/
+# Option B: ECS
+cp templates/backend/kotlin/ecs/deploy-*.yml <your-project>/.github/workflows/
 
-# Option C: ECS (Normal deployment)
-cp templates/backend/kotlin/normal/ecs/*.yml <your-project>/.github/workflows/
-
-# Option D: ECS (Trunk-based)
-cp templates/backend/kotlin/trunk/ecs/*.yml <your-project>/.github/workflows/
-
-# Option E: ArgoCD GitOps (Normal)
-cp templates/backend/kotlin/normal/eks/argo/*.yml <your-project>/.github/workflows/
-
-# Option F: Multi-Environment deployment (deploy to multiple prod environments)
-cp templates/backend/kotlin/normal/eks/multi/*.yml <your-project>/.github/workflows/
-cp templates/.github/workflows/publish-badges.yml <your-project>/.github/workflows/
+# Option C: ArgoCD GitOps
+cp templates/backend/kotlin/eks/argo/deploy-*.yml <your-project>/.github/workflows/
 ```
 
 **Python Projects:**
@@ -106,8 +101,8 @@ cp templates/backend/python/pr-check.yml <your-project>/.github/workflows/
 cp templates/backend/python/master-build.yml <your-project>/.github/workflows/
 
 # 2. Choose your deployment method (same options as Kotlin above, but use python/ instead of kotlin/)
-# Example for EKS Normal:
-cp templates/backend/python/normal/eks/*.yml <your-project>/.github/workflows/
+# Example for EKS:
+cp templates/backend/python/eks/deploy-*.yml <your-project>/.github/workflows/
 ```
 
 #### For Infrastructure (Terraform) Projects
@@ -116,12 +111,8 @@ cp templates/backend/python/normal/eks/*.yml <your-project>/.github/workflows/
 # 1. Copy PR check workflow
 cp templates/infra/pr-check.yml <your-project>/.github/workflows/
 
-# 2. Copy deployment workflows (choose one)
-# Normal deployment:
-cp templates/infra/normal/*.yml <your-project>/.github/workflows/
-
-# OR Trunk-based deployment:
-cp templates/infra/trunk/*.yml <your-project>/.github/workflows/
+# 2. Copy deployment workflows
+cp templates/infra/deploy-*.yml <your-project>/.github/workflows/
 ```
 
 ---
@@ -229,6 +220,7 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
 - [ ] `CONTAINER_NAME` (variable)
 - [ ] `SERVICE_NAME_DEV` (variable)
 - [ ] `SERVICE_NAME_PROD` (variable)
+- [ ] `DOCKER_REPO` (variable)
 
 **For ArgoCD:**
 
@@ -236,13 +228,14 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
 - [ ] `ARGOCD_NAMESPACE` (variable)
 - [ ] `K8S_NAMESPACE` (variable)
 
-**For Multi-Environment Deployments:**
+#### Infrastructure-Specific
 
-- [ ] Configure environment-specific variables (e.g., `ECS_CLUSTER_NAME_PROD-1`, `ECS_CLUSTER_NAME_PROD-2`)
-- [ ] Default environments are `prod-1`, `prod-2`, `prod-3` - update the environment list if needed
+- [ ] `TF_BACKEND_CONFIG_DEV` (secret, optional)
+- [ ] `TF_BACKEND_CONFIG_PROD` (secret, optional)
+- [ ] Project-specific `TF_VAR_*` variables
 
-> **📋 Complete Reference**: See [VARIABLES_AND_SECRETS.md](./VARIABLES_AND_SECRETS.md) for the full list of all
-> variables and secrets.
+> **📋 Complete Reference**: See the [Variables and Secrets](#variables-and-secrets-reference) section below for the full
+> list.
 
 ---
 
@@ -275,7 +268,7 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
     - Builds your app (to catch build errors early)
 
 - **`deploy-dev-*.yml`**: Deploys to DEV environment
-    - Triggers: Push to `main`/`master` (normal) or `release/*` (trunk-based)
+    - Triggers: Push to `main`/`master` branch
     - Builds your app
     - Deploys to DEV (CloudFront S3 bucket or Amplify)
 
@@ -308,10 +301,16 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
     - Promotes DEV image to PROD (no rebuild)
     - Deploys to PROD environment
 
-- **`deploy-prod.yml` (Multi-Environment)**: Deploys to multiple PROD environments
-    - Builds image once
-    - Deploys to prod-1, prod-2, prod-3 in parallel
-    - Creates deployment badges
+- **`deploy-dev.yml` (ArgoCD)**: Deploys to DEV using ArgoCD GitOps
+    - Builds Docker images (main + migration)
+    - Pushes to ECR
+    - Updates ArgoCD GitOps repository with new values
+    - ArgoCD automatically syncs changes to cluster
+
+- **`deploy-prod.yml` (ArgoCD)**: Deploys to PROD using ArgoCD GitOps
+    - Promotes DEV image to PROD (or builds from tag)
+    - Updates ArgoCD GitOps repository with new values
+    - ArgoCD automatically syncs changes to cluster
 
 ### Infrastructure Workflows
 
@@ -329,38 +328,373 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
 
 ---
 
+## 🔧 Reusable Workflow Steps (Composite Actions)
+
+All workflows use **composite actions** - reusable, modular steps that make workflows easier to understand and maintain.
+These actions are located in `.github/actions/` and can be referenced in any workflow.
+
+### Architecture: 3-Step Structure
+
+Modern workflows use a simplified **3-step structure** for maximum clarity:
+
+1. **Setup Environment** - Authentication, AWS credentials, and language setup
+2. **Build and Package** - Build code and create Docker images (or build frontend bundle)
+3. **Deploy and Notify** - Deploy to target and send notifications
+
+### High-Level Consolidated Actions
+
+These actions combine multiple operations for simplified workflows:
+
+#### `setup-environment`
+
+Combines GitHub auth, AWS credentials, and language setup (Java/Kotlin or Python).
+
+**Inputs:**
+
+- `app_id`, `private_key` - GitHub App authentication
+- `aws_role_to_assume`, `aws_region` - AWS configuration
+- `language` - `java-kotlin` or `python`
+- Language-specific inputs (Java version, Python version, artifact registry config, etc.)
+
+**Used in:** Backend deployment workflows
+
+#### `setup-frontend-environment`
+
+Combines GitHub auth, AWS credentials, and Node.js setup.
+
+**Inputs:**
+
+- `app_id`, `private_key` - GitHub App authentication
+- `aws_role_to_assume`, `aws_region` - AWS configuration
+- `node_version`, `package_manager` - Node.js configuration
+
+**Used in:** Frontend deployment workflows
+
+#### `build-and-package`
+
+Combines build operations and Docker image creation/push.
+
+**Inputs:**
+
+- `language` - `java-kotlin` or `python`
+- `docker_repo`, `environment`, `github_sha` - Docker configuration
+- `docker_context`, `dockerfile` - Docker build configuration
+- Language-specific build inputs
+
+**Outputs:**
+
+- `image_tag` - Generated Docker image tag
+
+**Used in:** Backend deployment workflows
+
+#### `build-frontend-bundle`
+
+Builds frontend application bundle.
+
+**Inputs:**
+
+- `build_command`, `package_manager`
+
+**Used in:** Frontend deployment workflows
+
+#### `build-and-test`
+
+Combines environment setup, build, lint, and test operations.
+
+**Inputs:**
+
+- `app_id`, `private_key` - GitHub App authentication
+- `language` - `java-kotlin`, `python`, or `nodejs`
+- `test_command`, `lint_command` - Test and lint commands
+- `run_linters`, `run_build` - Feature flags
+- Language-specific configuration
+
+**Used in:** PR check and master build workflows
+
+#### `deploy-and-notify`
+
+Combines deployment and notification operations. Supports multiple deployment types.
+
+**Inputs:**
+
+- `deployment_type` - `ecs`, `eks`, `cloudfront`, `amplify`, or `terraform`
+- `aws_region`, `service_name`, `environment` - Common deployment config
+- `slack_webhook_url` - Notification configuration
+- Type-specific inputs (ECS cluster, Helm config, S3 bucket, etc.)
+
+**Used in:** All deployment workflows
+
+### Individual Actions (For Advanced Use Cases)
+
+These actions are still available for workflows that need more granular control (e.g., ArgoCD workflows):
+
+#### Authentication & Setup
+
+- `setup-github-auth` - Generate GitHub App token and checkout source
+- `setup-aws-credentials` - Configure AWS credentials using OIDC
+- `setup-java-kotlin` - Setup JDK, Gradle, and artifact registry
+- `setup-python` - Setup Python version and install dependencies
+
+#### Build Steps
+
+- `build-java-kotlin` - Run Gradle build commands
+
+#### Docker Operations
+
+- `docker-ecr-login` - Login to Amazon ECR
+- `docker-prepare-tags` - Prepare Docker image tags from SHA/version
+- `docker-build-push` - Build and push Docker image to ECR
+
+#### ArgoCD GitOps Operations
+
+- `commit-argocd-values` - Copy values file to ArgoCD GitOps repository and commit
+    - **Inputs:** `argocd_repo_name`, `service_name`, `environment`, `values_file_path`, `commit_message`,
+      `github_token`
+    - **Used in:** ArgoCD deployment workflows
+
+#### Utilities
+
+- `extract-git-info` - Extract git author, revision, and commit messages
+- `extract-app-version` - Extract application version from manifest.json, pyproject.toml, or git tag
+    - **Inputs:** `version_source` (manifest, pyproject, or git-tag), `version_file`
+    - **Outputs:** `app_version`
+    - **Used in:** ArgoCD workflows and version extraction scenarios
+- `send-slack-notification` - Send deployment notification to Slack
+
+### Example: Using Consolidated Actions
+
+**Backend Deployment (3 steps):**
+
+```yaml
+steps:
+  # Step 1: Setup Environment
+  - uses: ./.github/actions/setup-environment
+    with:
+      app_id: ${{ vars.GH_APP_ID }}
+      private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      aws_role_to_assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+      aws_region: ${{ vars.AWS_REGION }}
+      language: 'java-kotlin'
+      java_version: '17'
+
+  # Step 2: Build and Package
+  - uses: ./.github/actions/build-and-package
+    id: package
+    with:
+      language: 'java-kotlin'
+      docker_repo: ${{ vars.DOCKER_REPO }}
+      environment: 'dev'
+      aws_region: ${{ vars.AWS_REGION }}
+
+  # Step 3: Deploy and Notify
+  - uses: ./.github/actions/deploy-and-notify
+    with:
+      deployment_type: 'ecs'
+      aws_region: ${{ vars.AWS_REGION }}
+      service_name: ${{ vars.SERVICE_NAME }}
+      environment: 'dev'
+      ecs_cluster_name: ${{ vars.ECS_CLUSTER_NAME }}
+      task_family: ${{ vars.TASK_FAMILY }}
+      container_name: ${{ vars.CONTAINER_NAME }}
+      image_uri: ${{ vars.DOCKER_REPO }}:${{ steps.package.outputs.image_tag }}
+      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+
+**Frontend Deployment (3 steps):**
+
+```yaml
+steps:
+  # Step 1: Setup Environment
+  - uses: ./.github/actions/setup-frontend-environment
+    with:
+      app_id: ${{ vars.GH_APP_ID }}
+      private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      aws_role_to_assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+      aws_region: ${{ vars.AWS_REGION }}
+      node_version: '18.18.2'
+
+  # Step 2: Build Bundle
+  - uses: ./.github/actions/build-frontend-bundle
+
+  # Step 3: Deploy and Notify
+  - uses: ./.github/actions/deploy-and-notify
+    with:
+      deployment_type: 'cloudfront'
+      aws_region: ${{ vars.AWS_REGION }}
+      service_name: ${{ github.event.repository.name }}
+      environment: 'dev'
+      s3_bucket: ${{ vars.AWS_S3_BUCKET }}
+      cloudfront_id: ${{ vars.AWS_CLOUDFRONT_ID }}
+      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+
+---
+
 ## 📁 Directory Structure
 
 ```
+.github/
+└── actions/                         # Reusable composite actions
+    ├── setup-environment/           # Combined: GitHub auth + AWS + language setup (backend)
+    ├── setup-frontend-environment/  # Combined: GitHub auth + AWS + Node.js setup
+    ├── build-and-package/          # Combined: Build + Docker operations
+    ├── build-frontend-bundle/      # Frontend build
+    ├── build-and-test/            # Combined: Setup + build + lint + test
+    ├── deploy-and-notify/         # Combined: Deploy + extract git info + Slack
+    │
+    ├── setup-github-auth/         # Individual: GitHub authentication
+    ├── setup-aws-credentials/    # Individual: AWS credentials
+    ├── setup-java-kotlin/         # Individual: Java/Kotlin setup
+    ├── setup-python/              # Individual: Python setup
+    ├── build-java-kotlin/         # Individual: Java/Kotlin build
+    ├── docker-ecr-login/         # Individual: Docker ECR login
+    ├── docker-prepare-tags/      # Individual: Docker tag preparation
+    ├── docker-build-push/        # Individual: Docker build & push
+    ├── commit-argocd-values/     # Individual: ArgoCD GitOps commit
+    ├── extract-git-info/         # Individual: Git info extraction
+    ├── extract-app-version/      # Individual: App version extraction
+    └── send-slack-notification/  # Individual: Slack notifications
+
 templates/
-├── frontend/                        # Frontend templates
-│   ├── cloudfront/                 # CloudFront/S3 deployment
-│   ├── amplify/                    # AWS Amplify deployment
-│   └── e2e-tests.yml              # End-to-end tests
-├── backend/                         # Backend templates
-│   ├── kotlin/                      # Kotlin/Java
-│   │   ├── pr-check.yml            # PR validation
-│   │   ├── master-build.yml        # Master branch build
-│   │   ├── normal/                 # Normal deployment (main/master)
-│   │   │   ├── eks/                # EKS/Kubernetes
-│   │   │   │   ├── deploy-dev.yml
-│   │   │   │   ├── deploy-prod.yml
-│   │   │   │   ├── argo/           # ArgoCD GitOps
-│   │   │   │   └── multi/          # Multi-environment deployment
-│   │   │   └── ecs/                # ECS
-│   │   │       ├── deploy-dev.yml
-│   │   │       ├── deploy-prod.yml
-│   │   │       └── multi/          # Multi-environment deployment
-│   │   └── trunk/                  # Trunk-based (release/*)
-│   │       └── [same structure]
-│   └── python/                      # Python (same structure)
-├── infra/                           # Infrastructure (Terraform)
+├── frontend/                      # Frontend templates
+│   ├── cloudfront/               # CloudFront/S3 deployment
+│   ├── amplify/                  # AWS Amplify deployment
+│   └── e2e-tests.yml            # End-to-end tests
+├── backend/                       # Backend templates
+│   ├── kotlin/                   # Kotlin/Java
+│   │   ├── pr-check.yml         # PR validation
+│   │   ├── master-build.yml     # Master branch build
+│   │   ├── eks/                 # EKS/Kubernetes
+│   │   │   ├── deploy-dev.yml
+│   │   │   ├── deploy-prod.yml
+│   │   │   └── argo/            # ArgoCD GitOps
+│   │   └── ecs/                 # ECS
+│   │       ├── deploy-dev.yml
+│   │       └── deploy-prod.yml
+│   └── python/                   # Python (same structure)
+├── infra/                         # Infrastructure (Terraform)
 │   ├── pr-check.yml
-│   ├── normal/
-│   └── trunk/
-└── .github/workflows/
-    └── publish-badges.yml          # Badge publishing (for multi-environment deployments)
+│   ├── deploy-dev.yml
+│   └── deploy-prod.yml
+└── best-practices/               # Best practice examples
+    ├── BEST_PRACTICES.md
+    ├── matrix-multi-environment.yml
+    ├── caching-strategies.yml
+    └── ...
 ```
+
+---
+
+## 📋 Variables and Secrets Reference
+
+### Common Variables and Secrets (All Templates)
+
+**Variables:**
+
+- `GH_APP_ID` - GitHub App ID for authentication
+- `AWS_REGION` - AWS region for deployments
+
+**Secrets:**
+
+- `GH_APP_PRIVATE_KEY` - GitHub App private key for authentication
+- `SLACK_WEBHOOK_URL` - Slack webhook URL for notifications
+- `AWS_ROLE_TO_ASSUME_DEV` - AWS IAM role ARN for DEV environment
+- `AWS_ROLE_TO_ASSUME_PROD` - AWS IAM role ARN for PROD environment
+
+### Frontend Templates
+
+**CloudFront Deployment:**
+
+**Variables:**
+
+- `AWS_S3_BUCKET_DEV` - S3 bucket name for DEV
+- `AWS_CLOUDFRONT_ID_DEV` - CloudFront distribution ID for DEV
+- `AWS_S3_BUCKET_PROD` - S3 bucket name for PROD
+- `AWS_CLOUDFRONT_ID_PROD` - CloudFront distribution ID for PROD
+- `NODE_VERSION` - Node.js version (e.g., `18.18.2`)
+- `VITE_*` - Frontend environment variables (project-specific)
+
+**Amplify Deployment:**
+
+**Variables:**
+
+- `NODE_VERSION` - Node.js version
+
+**Secrets:**
+
+- `AMPLIFY_WEBHOOK_URL_DEV` - AWS Amplify webhook URL for DEV
+- `AMPLIFY_WEBHOOK_URL_PROD` - AWS Amplify webhook URL for PROD
+
+### Backend Templates
+
+**Common (All Backend):**
+
+**Variables:**
+
+- `SERVICE_NAME` - Service name for deployments
+- `BASE_DOMAIN_DEV` - Base domain for DEV environment
+- `BASE_DOMAIN_PROD` - Base domain for PROD environment
+
+**Secrets:**
+
+- `AWS_ACCOUNT_ID_DEV` - AWS account ID for DEV
+- `AWS_ACCOUNT_ID_PROD` - AWS account ID for PROD
+
+**Kotlin/Java Specific:**
+
+**Variables:**
+
+- `JAVA_VERSION` - Java version (e.g., `17`)
+- `ARTIFACTORY_URL` - Maven artifact repository URL
+- `ARTIFACTORY_USERNAME` - Maven artifact repository username
+- `AWS_CODE_ARTIFACT_DOMAIN_DEV` - AWS CodeArtifact domain for DEV
+
+**EKS/Helm Deployment:**
+
+**Variables:**
+
+- `DOCKER_REPO_DEV` - Docker repository URL for DEV
+- `DOCKER_REPO_PROD` - Docker repository URL for PROD
+- `HELM_REPO` - Helm chart repository URL
+- `HELM_SPARTAN_VERSION` - Helm chart version
+
+**ECS Deployment:**
+
+**Variables:**
+
+- `DOCKER_REPO` - Docker repository URL
+- `ECS_CLUSTER_NAME_DEV` - ECS cluster name for DEV
+- `ECS_CLUSTER_NAME_PROD` - ECS cluster name for PROD
+- `SERVICE_NAME_DEV` - ECS service name for DEV
+- `SERVICE_NAME_PROD` - ECS service name for PROD
+- `TASK_FAMILY_DEV` - ECS task family name for DEV
+- `TASK_FAMILY_PROD` - ECS task family name for PROD
+- `CONTAINER_NAME` - Container name in task definition
+
+**Python Specific:**
+
+**Variables:**
+
+- `PYTHON_VERSION` - Python version (e.g., `3.11`)
+
+**ArgoCD:**
+
+**Variables:**
+
+- `ARGOCD_REPO_NAME` - Your ArgoCD GitOps repository name
+- `ARGOCD_NAMESPACE` - ArgoCD namespace
+- `K8S_NAMESPACE` - Kubernetes namespace
+
+### Infrastructure (Terraform) Templates
+
+**Secrets:**
+
+- `TF_BACKEND_CONFIG_DEV` - Terraform backend configuration for DEV (optional)
+- `TF_BACKEND_CONFIG_PROD` - Terraform backend configuration for PROD (optional)
+
+**Variables:**
+
+- `TF_VAR_*` - Terraform input variables (project-specific)
 
 ---
 
@@ -368,8 +702,10 @@ templates/
 
 ### Which deployment strategy should I choose?
 
-- **Normal**: Use if you deploy directly from `main`/`master` branch
-- **Trunk-based**: Use if you create `release/*` branches for deployments
+- **Default**: Workflows deploy directly from `main`/`master` branch to DEV and from git tags to PROD
+- **Release branches**: If you need a trunk-based release strategy, consider using release branches (e.g.,
+  `release/v1.0.0`). You can modify the workflow trigger to include `release/*` branches in the `on.push.branches`
+  section of your workflow file.
 
 ### EKS vs ECS?
 
@@ -383,19 +719,17 @@ templates/
 - ArgoCD automatically syncs changes to your cluster
 - Use if your organization uses ArgoCD
 
-### What's Multi-Environment deployment?
+**ArgoCD workflows use specialized actions:**
 
-- Deploys to multiple production environments (prod-1, prod-2, prod-3) at the same time
-- Builds your Docker image once, then deploys it to all environments in parallel
-- Use this if you need to deploy to multiple production environments
-- Much faster than deploying to each environment one by one
+- `extract-app-version` - Extracts version from manifest.json, pyproject.toml, or git tags
+- `commit-argocd-values` - Handles GitOps repository checkout, file copy, and commit operations
+- `docker-build-push` - Builds and pushes multiple Docker images (main + migration)
 
-### Do I need badge publishing?
+### How do I deploy to multiple environments?
 
-- Only needed for multi-environment deployments
-- Publishes deployment status badges to GitHub Pages
-- Shows which version is deployed to each environment
-- Optional but nice to have for visibility
+- Use **matrix strategies** to deploy to multiple environments in parallel
+- See [best-practices/BEST_PRACTICES.md](best-practices/BEST_PRACTICES.md) for detailed guidance
+- Matrix strategies allow you to build once and deploy to multiple environments simultaneously
 
 ---
 
@@ -425,15 +759,6 @@ templates/
 - Review test failures
 - Check linting errors
 - Verify build commands match your project structure
-
----
-
-## 📚 Additional Resources
-
-- [VARIABLES_AND_SECRETS.md](./VARIABLES_AND_SECRETS.md) - Complete list of all variables and secrets
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Setup GitHub Actions on new projects](../Setup%20GitHub%20Actions%20on%20new%20projects%202d801fb05bf180b88f6ad24134e2f3e0.md) -
-  Full technical documentation
 
 ---
 
@@ -468,6 +793,15 @@ Workflows support both GitHub-hosted and self-hosted runners:
 - **Self-hosted** (e.g., `builder-16-32`): Used for resource-intensive builds. Requires setting up your own runner.
 
 To use self-hosted runners, update the `runs-on` value in your workflow file. See the Kotlin templates for examples.
+
+---
+
+## 📚 Additional Resources
+
+- [best-practices/BEST_PRACTICES.md](best-practices/BEST_PRACTICES.md) - GitHub Actions best practices, matrix
+  strategies, caching, and optimization patterns
+- [best-practices/](./best-practices/) - **Working examples** of best practices with real, runnable workflows
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
 
 ---
 

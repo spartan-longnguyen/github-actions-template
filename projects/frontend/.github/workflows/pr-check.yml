@@ -29,52 +29,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # === Step 1: Setup Environment ===
-      
-      # Generate GitHub App Token
-      - name: Generate GitHub App Token
-        id: github-app-token
-        uses: actions/create-github-app-token@v2
+      # === Step 1: Build and Test ===
+      - uses: ./.github/actions/build-and-test
         with:
-          app-id: ${{ vars.GH_APP_ID }}
-          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-
-      # Checkout source code
-      - name: Checkout source
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: '3'
-          token: ${{ steps.github-app-token.outputs.token }}
+          app_id: ${{ vars.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           ref: ${{ github.head_ref }}
-          persist-credentials: false
-
-      # Set Node.js
-      - name: Set Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
-
-      # Install Node.js dependencies
-      - name: Install Node.js dependencies
-        shell: bash
-        run: yarn install --frozen-lockfile
-
-      # === Step 2: Run Linters ===
-      - name: Run Linters
-        shell: bash
-        run: yarn lint
-
-      # === Step 3: Build ===
-      - name: Build Frontend
-        shell: bash
-        run: yarn build
+          language: 'nodejs'
+          node_version: ${{ env.NODE_VERSION }}
+          lint_command: 'yarn lint'
+          run_linters: 'true'
+          test_command: 'yarn test --coverage --watchAll=false'
+          build_command: 'build'
+          run_build: 'true'
         env:
         # TODO: Add your build environment variables here
         # VITE_SERVICE_PLATFORM_API_URL: ${{ vars.VITE_SERVICE_PLATFORM_API_URL_DEV }}
-
-      # === Step 4: Run Tests ===
-      - name: Run Tests
-        shell: bash
-        run: yarn test --coverage --watchAll=false

@@ -1,28 +1,44 @@
 {
   "name": "frontend",
-  "version": "1.0.0",
-  "description": "Frontend React application",
+  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:development": "vite build --mode development",
+    "build:production": "vite build --mode production",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "test": "vitest"
+    "format": "prettier -w -c .",
+    "lint": "eslint .",
+    "test": "vitest",
+    "type-check": "npx tsc --noEmit",
+    "ci": "yarn format && yarn lint && yarn type-check"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
-    "@vitejs/plugin-react": "^4.2.1",
-    "eslint": "^8.55.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^5.0.8",
-    "vitest": "^1.0.4"
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react-swc": "^3.8.0",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "jsdom": "^26.0.0",
+    "prettier": "3.5.3",
+    "typescript": "5.7.3",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.1.1",
+    "vitest": "^3.0.6"
+  },
+  "engines": {
+    "node": ">=22.14.0",
+    "yarn": ">=1.22.0"
   }
 }

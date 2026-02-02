@@ -36,73 +36,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # === Step 1: Setup Environment ===
-      
-      # Generate GitHub App Token
-      - name: Generate GitHub App Token
-        id: github-app-token
-        uses: actions/create-github-app-token@v2
+      # === Step 1: Build and Test ===
+      - uses: ./.github/actions/build-and-test
         with:
-          app-id: ${{ vars.GH_APP_ID }}
-          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-
-      # Checkout source code
-      - name: Checkout source
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: '3'
-          token: ${{ steps.github-app-token.outputs.token }}
+          app_id: ${{ vars.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           ref: ${{ github.head_ref }}
-          persist-credentials: false
-
-      # Configure AWS Credentials
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          role-session-name: gh-actions
-          aws-region: ${{ env.AWS_REGION }}
-
-      # Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      # Install Python dependencies
-      - name: Install Python dependencies
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip
-          # TODO: Uncomment and configure based on your dependency manager
-          pip install -r requirements.txt
-          # OR for Poetry:
-          # curl -sSL https://install.python-poetry.org | python3 -
-          # poetry install --no-interaction --no-ansi
-
-      # === Step 2: Run Linters ===
-      - name: Run Linters
-        shell: bash
-        run: |
-          # TODO: Update based on your linting tools (e.g., ruff, black, flake8, pylint)
-          # Example: ruff check . && black --check .
-          echo "Add your linting commands here"
-
-      # === Step 3: Build ===
-      - name: Build Python
-        shell: bash
-        run: |
-          echo "Add your Python build commands here"
-
-      # === Step 4: Run Tests ===
-      - name: Run Tests
-        shell: bash
-        run: |
-          # TODO: Update based on your testing framework (e.g., pytest, unittest)
-          # Example: pytest --cov --cov-report=xml
-          echo "Add your test commands here"
+          aws_role_to_assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws_region: ${{ env.AWS_REGION }}
+          language: 'python'
+          python_version: ${{ env.PYTHON_VERSION }}
+          lint_command: |
+            # TODO: Update based on your linting tools (e.g., ruff, black, flake8, pylint)
+            # Example: ruff check . && black --check .
+            echo "Add your linting commands here"
+          run_linters: 'true'
+          test_command: |
+            # TODO: Update based on your testing framework (e.g., pytest, unittest)
+            # Example: pytest --cov --cov-report=xml
+            echo "Add your test commands here"
         env:
           DB_HOST: localhost
           DB_PORT: 5432

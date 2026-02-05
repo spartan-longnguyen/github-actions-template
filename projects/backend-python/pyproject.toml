@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Python backend service"
 authors = ["spartan <spartan@c0x12c.com>"]
 readme = "README.md"
-packages = [{include = "backend_python", from="src"}]
+packages = [{ include = "backend_python", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"

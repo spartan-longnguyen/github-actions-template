@@ -109,6 +109,9 @@ cp templates/infra/pr-check.yml <your-project>/.github/workflows/
 cp templates/infra/deploy-*.yml <your-project>/.github/workflows/
 ```
 
+**Note:** Terraform workflows use the composite action from `c0x12c/gh-actions-terraform-workflows`. No need to copy
+`.github/actions/` for Terraform workflows.
+
 ---
 
 ### Step 2: Customize Your Workflows
@@ -146,9 +149,16 @@ In each workflow file, update:
 
 #### Infrastructure Customization
 
-- [ ] **Terraform version**: Update `TF_VERSION` if specified
-- [ ] **Working directory**: Update if Terraform files are in a subdirectory
-- [ ] **Backend configuration**: Set up `TF_BACKEND_CONFIG_*` secrets if needed
+**Terraform Project Structure:**
+
+- [ ] **File organization**: Use numbered prefix files (e.g., `0.1-backend.tf`, `0.3-providers.tf`, `0.4-variables.tf`,
+  `1-main.tf`, `99-outputs.tf`)
+- [ ] **Environment directories**: Create `envs/dev/` and `envs/prod/` directories with:
+    - `terraform.tfvars` - Environment-specific variable values
+    - `state.config` - Backend state configuration
+- [ ] **Working directory**: Update `WORKING_DIR` if Terraform files are in a subdirectory (default: `.`)
+- [ ] **Backend configuration**: Configure `state.config` files in each environment directory
+- [ ] **Terraform variables**: Update `terraform.tfvars` files with your environment-specific values
 
 ---
 
@@ -218,9 +228,14 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
 
 #### Infrastructure-Specific
 
-- [ ] `TF_BACKEND_CONFIG_DEV` (secret, optional)
-- [ ] `TF_BACKEND_CONFIG_PROD` (secret, optional)
-- [ ] Project-specific `TF_VAR_*` variables
+**Note:** Terraform workflows use the composite action from `c0x12c/gh-actions-terraform-workflows`. Configuration is
+done via:
+
+- [ ] **Environment files**: Create `envs/dev/terraform.tfvars` and `envs/prod/terraform.tfvars` with your variable
+  values
+- [ ] **State configuration**: Create `envs/dev/state.config` and `envs/prod/state.config` with backend configuration
+- [ ] **Secrets**: Configure `secrets.auto.tfvars` files (encrypted with SOPS) if using sensitive variables
+- [ ] `SLACK_WEBHOOK_URL` (secret) - For deployment notifications
 
 > **📋 Complete Reference**: See the [Variables and Secrets](#variables-and-secrets-reference) section below for the full
 > list.
@@ -288,16 +303,22 @@ Go to your GitHub repository → **Settings** → **Secrets and variables** → 
 ### Infrastructure Workflows
 
 - **`pr-check.yml`**: Runs on Pull Requests
-    - Validates Terraform syntax
+    - Uses `c0x12c/gh-actions-terraform-workflows/actions/terraform-plan@v1`
+    - Validates Terraform syntax (format check, init, validate)
     - Runs `terraform plan` (shows what would change)
+    - Triggers on changes to `envs/dev/**/*` or `*.tf` files
 
 - **`deploy-dev.yml`**: Applies Terraform to DEV
-    - Triggers: Push to `main`/`master`
-    - Runs `terraform apply`
+    - Uses `c0x12c/gh-actions-terraform-workflows/actions/terraform-apply@v1`
+    - Triggers: Push to `main`/`master` branch
+    - Runs `terraform apply` with DEV configuration
+    - Uses `envs/dev/terraform.tfvars` and `envs/dev/state.config`
 
 - **`deploy-prod.yml`**: Applies Terraform to PROD
+    - Uses `c0x12c/gh-actions-terraform-workflows/actions/terraform-apply@v1`
     - Triggers: Git tag `v*.*.*`
-    - Runs `terraform apply`
+    - Runs `terraform apply` with PROD configuration
+    - Uses `envs/prod/terraform.tfvars` and `envs/prod/state.config`
 
 ---
 
@@ -395,7 +416,10 @@ Combines deployment and notification operations. Supports multiple deployment ty
 - `slack_webhook_url` - Notification configuration
 - Type-specific inputs (ECS cluster, Helm config, S3 bucket, etc.)
 
-**Used in:** All deployment workflows
+**Used in:** Backend and frontend deployment workflows
+
+> **Note:** Terraform workflows use external composite actions from `c0x12c/gh-actions-terraform-workflows` instead of
+`deploy-and-notify`. See [Infrastructure Workflows](#infrastructure-workflows) section above.
 
 ### Individual Actions (For Advanced Use Cases)
 
@@ -642,14 +666,24 @@ templates/
 
 ### Infrastructure (Terraform) Templates
 
+**Project Structure:**
+
+- Terraform files use numbered prefix pattern: `0.1-backend.tf`, `0.3-providers.tf`, `0.4-variables.tf`, `1-main.tf`,
+  `99-outputs.tf`
+- Environment-specific configuration in `envs/dev/` and `envs/prod/` directories:
+    - `terraform.tfvars` - Variable values
+    - `state.config` - Backend state configuration
+    - `secrets.auto.tfvars` - Encrypted secrets (optional, using SOPS)
+
 **Secrets:**
 
-- `TF_BACKEND_CONFIG_DEV` - Terraform backend configuration for DEV (optional)
-- `TF_BACKEND_CONFIG_PROD` - Terraform backend configuration for PROD (optional)
+- `SLACK_WEBHOOK_URL` - Slack webhook for deployment notifications
 
 **Variables:**
 
-- `TF_VAR_*` - Terraform input variables (project-specific)
+- Variables are defined in `terraform.tfvars` files within each environment directory
+- Common variables: `stack_name`, `environment`, `region`
+- Project-specific variables should be added to `0.4-variables.tf` and referenced in `terraform.tfvars`
 
 ---
 

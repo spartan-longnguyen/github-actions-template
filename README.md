@@ -21,9 +21,15 @@ projects. All workflows use a modular architecture with composite actions for ma
 
 2. **Copy templates:**
    ```bash
+   # Backend/Frontend projects
    cp templates/backend/kotlin/pr-check.yml your-project/.github/workflows/
    cp templates/backend/kotlin/ecs/deploy-*.yml your-project/.github/workflows/
    cp -r .github/actions your-project/.github/
+   
+   # Infrastructure (Terraform) projects
+   cp templates/infra/pr-check.yml your-project/.github/workflows/
+   cp templates/infra/deploy-*.yml your-project/.github/workflows/
+   # Note: Terraform workflows use external composite actions, no need to copy .github/actions/
    ```
 
 3. **Configure:**

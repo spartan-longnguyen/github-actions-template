@@ -1,59 +1,76 @@
-name: Terraform Deploy PROD (Normal - Main/Master)
+name: PROD - Terraform Apply
 
 on:
   push:
     tags:
       - 'v*.*.*'
     paths:
-      - '**/*.tf'
-      - '**/*.tfvars'
+      - 'envs/prod/**/*'
+      - '*.tf'
+      - '.github/workflows/deploy-prod.yml'
   workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
+  WORKING_DIR: "."
+  TF_CLI_ARGS_init: '-backend-config=envs/prod/state.config'
+  TF_CLI_ARGS_plan: '-var-file=envs/prod/terraform.tfvars'
+  TF_CLI_ARGS_apply: '-var-file=envs/prod/terraform.tfvars'
 
 permissions:
   contents: read
   id-token: write
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  # TODO: Update AWS region and environment
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
-  TF_VERSION: 1.6.0
-  ENVIRONMENT: prod
+  pull-requests: write
 
 jobs:
-  terraform-apply:
-    name: Terraform Apply (PROD)
+  apply:
+    name: Terraform apply
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
-      # === Step 1: Setup Environment ===
-      - uses: ./.github/actions/setup-github-auth
+      - name: Create GitHub App Token
+        uses: actions/create-github-app-token@v2
+        id: github-app-token
         with:
-          app_id: ${{ vars.GH_APP_ID }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          fetch_depth: '3'
+          app-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
-      - uses: ./.github/actions/setup-aws-credentials
+      - name: Checkout source
+        uses: actions/checkout@v5
         with:
-          role_to_assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          aws_region: ${{ env.AWS_REGION }}
+          fetch-depth: 3
+          ref: ${{ github.head_ref }}
+          token: ${{ steps.github-app-token.outputs.token }}
+          persist-credentials: false
 
-      # === Step 2: Deploy and Notify ===
-      - uses: ./.github/actions/deploy-and-notify
+      - name: Configure AWS Credentials for DEV
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          deployment_type: 'terraform'
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+          role-session-name: gh-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Decrypt secrets in config folder
+        uses: c0x12c/gh-actions-git-secret-protector@v1.1
+        with:
+          filter: app-dev
+
+      - name: Run Terraform Apply
+        uses: c0x12c/gh-actions-terraform-workflows/actions/terraform-apply@v1
+        env:
+          TF_CLI_ARGS_init: ${{ env.TF_CLI_ARGS_init }}
+          TF_CLI_ARGS_plan: ${{ env.TF_CLI_ARGS_plan }}
+          TF_CLI_ARGS_apply: ${{ env.TF_CLI_ARGS_apply }}
+        with:
           aws_region: ${{ env.AWS_REGION }}
-          service_name: ${{ github.event.repository.name }}
-          environment: ${{ env.ENVIRONMENT }}
-          tf_version: ${{ env.TF_VERSION }}
-          tf_working_directory: '.'
-          tf_auto_approve: 'true'
+          aws_role: ${{ env.AWS_ROLE_TO_ASSUME }}
+          environment: prod
+          python_version: '3.12'
+          secret_filter: 'app-prod'
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-        # TODO: Update working directory and backend configuration
-        # tf_working_directory: ./terraform
-        # env:
-        #   TF_BACKEND_CONFIG: ${{ secrets.TF_BACKEND_CONFIG_PROD }}
+          terraform_version: '1.10.5'
+          working_dir: ${{ env.WORKING_DIR }}
